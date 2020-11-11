@@ -1,0 +1,40 @@
+name: Build Docker image
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build-image:
+    name: Build Docker image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Get the version
+        id: get_version
+        run: echo ::set-output name=VERSION::${GITHUB_REF#refs/tags/}
+
+      - name: Version
+        run: echo ${{ steps.get_version.outputs.VERSION }}
+
+      - name: Login to GitHub Packages Docker Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: ghcr.io/sturman/gh:v${{ steps.get_version.outputs.VERSION }}
+          build-args: |
+            version=${{ steps.get_version.outputs.VERSION }}
+
+      - name: Image digest
+        run: echo ${{ steps.docker_build.outputs.digest }}
